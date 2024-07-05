@@ -8,20 +8,37 @@ from django.shortcuts import render, redirect
 from .models import History
 from .forms import CreateUserForm
 import requests
+from django.db.models import *
 
 def logout_view(request):
     logout(request)
     return redirect('login') 
 
 def getBalance(user):
-    pass # this line can be deleted 
-    '''
+    total_deposits = History.objects.filter(user=user,type="deposit",status='Success').aggregate(total=Sum('ammount'))['total']
+    total_debits = History.objects.filter(user=user,type="debit",status='Success').aggregate(total=Sum('ammount'))['total']
+    balance = total_deposits - total_debits
+    return float(balance)    
+'''
     Write a function that finds the user's balance and returns it with the float data type. 
     To calculate the balance, calculate the sum of all user's deposits and the sum of all withdrawals.
     Then subtract the withdrawal amount from the deposit amount and return the result.
     '''
 def getCurrencyParams():
-    pass # this line can be deleted 
+    url ="https://fake-api.apps.berlintech.ai/api/currency_exchange"
+    
+    try:
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+            string_list = [f'{currency} ({rate})' for currency,rate in data.items()]
+            return [data, string_list]
+        else:
+            return [None, None]
+    except requests.RequestException as e:
+        print(f'An error occured : {e}')  
+        return [None, None]     
     '''
     Write a function that makes a GET request to the following address 
     https://fake-api.apps.berlintech.ai/api/currency_exchange
@@ -140,7 +157,7 @@ class CurrencyExchangeView(LoginRequiredMixin, View):
         currency_choices contains the value of the currency_choices variable
         username contains the name of the current user
         '''
-        return render(request, self.template_name, context)
+        #return render(request, self.template_name, context)
 
     def post(self, request):
         data, currency_choices = getCurrencyParams()

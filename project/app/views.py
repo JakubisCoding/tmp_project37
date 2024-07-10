@@ -15,8 +15,8 @@ def logout_view(request):
     return redirect('login') 
 
 def getBalance(user):
-    total_deposits = History.objects.filter(user=user,type="deposit",status='Success').aggregate(total=Sum('ammount'))['total']
-    total_debits = History.objects.filter(user=user,type="debit",status='Success').aggregate(total=Sum('ammount'))['total']
+    total_deposits = History.objects.filter(user=user,type="Deposit",status= "Success").aggregate(total=Sum('amount'))['total']
+    total_debits = History.objects.filter(user=user,type="Debit",status= "Success").aggregate(total=Sum('amount'))['total']
     balance = total_deposits - total_debits
     return float(balance)    
 '''
@@ -32,7 +32,7 @@ def getCurrencyParams():
 
         if response.status_code == 200:
             data = response.json()
-            string_list = [f'{currency} ({rate})' for currency,rate in data.items()]
+            string_list = [(currency,f'{currency} ({rate})') for currency,rate in data.items()]
             return [data, string_list]
         else:
             return [None, None]

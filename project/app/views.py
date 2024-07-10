@@ -55,6 +55,34 @@ def getCurrencyParams():
 
 
 class CreateUserView(CreateView):
+    model = User
+    form_class = CreateUserForm
+    template_name = 'app/create_account.html'
+    success_url = reverse_lazy('login')
+
+    def form_valid(self, form):
+        print(self.request.POST)  # Debugging: Print POST data to console
+        user = form.save()
+        return redirect(self.success_url)
+
+    def form_valid(self, form):
+        user = form.save()
+        # Redirect to a specific URL after successful form submission
+        return redirect('login') 
+    
+    def form_invalid(self, form):
+        # Handle invalid form submission (typically render the form with errors)
+        return self.render_to_response(self.get_context_data(form=form))
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        '''
+        If the user is authenticated, then add the 'username' key with the value of username to the context.
+        '''
+        return context
+    
+
+
     '''
     Finalize this class. It should create a new user.
     The model should be the User model
@@ -65,9 +93,8 @@ class CreateUserView(CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        '''
-        If the user is authenticated, then add the 'username' key with the value of username to the context.
-        '''
+        if self.request.user.is_authenticated:
+            context['username'] = self.request.user.username
         return context
 
 class CustomLoginView(LoginView):

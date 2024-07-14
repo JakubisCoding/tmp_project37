@@ -60,10 +60,7 @@ class CreateUserView(CreateView):
     template_name = 'app/create_account.html'
     success_url = reverse_lazy('login')
 
-    def form_valid(self, form):
-        print(self.request.POST)  # Debugging: Print POST data to console
-        user = form.save()
-        return redirect(self.success_url)
+   
 
     def form_valid(self, form):
         user = form.save()
@@ -98,7 +95,10 @@ class CreateUserView(CreateView):
         return context
 
 class CustomLoginView(LoginView):
-    '''
+    template_name = 'app/login.html'
+    #redirect_authenticated_user=True
+    success_url = reverse_lazy("main_menu")
+    '''"
     Modify this class. 
     specify the login.html file as the template
     if authentication is positive, add redirect to main_menu page
@@ -109,7 +109,10 @@ class CustomLoginView(LoginView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        '''
+        if self.request.user.is_authenticated:
+            context['username']= self.request.user.username
+            
+        ''' 
         If the user is authenticated, then add the 'username' key with the value of username to the context.
         '''
         return context

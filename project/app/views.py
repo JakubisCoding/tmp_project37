@@ -96,7 +96,6 @@ class CreateUserView(CreateView):
 
 class CustomLoginView(LoginView):
     template_name = 'app/login.html'
-    #redirect_authenticated_user=True
     success_url = reverse_lazy("main_menu")
     '''"
     Modify this class. 
@@ -110,7 +109,8 @@ class CustomLoginView(LoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
-            context['username']= self.request.user.username
+            return redirect(self.success_url)
+        context['username']= self.request.user.username
             
         ''' 
         If the user is authenticated, then add the 'username' key with the value of username to the context.
@@ -122,10 +122,14 @@ class MainMenuView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['username'] = self.request.user.username
+        if self.request.user.is_authenticated:
+            return context
+
         '''
         If the user is authenticated, then add the 'username' key with the value of username to the context.
         '''
-        return context
+       
 
 class BalanceOperationsView(LoginRequiredMixin, View):
     template_name = 'app/operations.html'

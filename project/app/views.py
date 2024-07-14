@@ -1,3 +1,4 @@
+from pyexpat.errors import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
@@ -15,8 +16,8 @@ def logout_view(request):
     return redirect('login') 
 
 def getBalance(user):
-    total_deposits = History.objects.filter(user=user,type="Deposit",status= "Success").aggregate(total=Sum('amount'))['total']
-    total_debits = History.objects.filter(user=user,type="Debit",status= "Success").aggregate(total=Sum('amount'))['total']
+    total_deposits = History.objects.filter(user=user,type="Deposit",status= "Success").aggregate(total=Sum('amount'))['total'] 
+    total_debits = History.objects.filter(user=user,type="Debit",status= "Success").aggregate(total=Sum('amount'))['total'] 
     balance = total_deposits - total_debits
     return float(balance)    
 '''
@@ -135,7 +136,15 @@ class BalanceOperationsView(LoginRequiredMixin, View):
     template_name = 'app/operations.html'
     
     def get(self, request):
-        pass # this line can be deleted 
+        template_name = 'app/operations.html'
+
+    def get(self, request):
+        balance = getBalance(request.user)
+        context = {
+            'balance': balance,
+            'username': request.user.username
+        }
+        return render(request, self.template_name, context)       
         '''
         This method should return the page given in template_name with a context.
 
@@ -145,22 +154,42 @@ class BalanceOperationsView(LoginRequiredMixin, View):
         '''
 
     def post(self, request):
-        pass # this line can be deleted 
-        '''
-        This method should process a balance transaction.
-        For this purpose it is necessary to add an entry to the History model. 
-        
-        status - if the amount on the account is not enough when attempting to withdraw funds, the status is failure, otherwise withdraw
-        amount - amount of operation, obtained from the form
-        type - type of operation (withdraw/deposit), the value is obtained from the form.
-        user - object of the current user
+        type = request.POST.get('type')
+        amount = float(request.POST.get('amount', 0))  # Get the amount from the form
+        user = request.user
+        balance = getBalance(user)  # Get the current balance
 
-        This method should return the page given in template_name with a context.
+        if type == 'withdraw':
+            if balance >= amount:
+                balance -= amount  # Deduct the amount
+                status = 'withdraw'
+            else:
+                messages.error(request, "Insufficient balance")
+                status = 'failure'
+        elif type == 'deposit':
+            balance += amount  # Add the amount
+            status = 'deposit'
+        else:
+            messages.error(request, "Invalid operation type")
+            return self.get(request)
 
-        Context is a dictionary with balance and username keys.
-        The balance key contains the result of the getBalance function (after account update)
-        username contains the username of the user.
-        '''
+    # Log the transaction
+        History.objects.create(
+            status=status,
+            amount=amount,
+            operation_type=type,
+            user=user
+        )
+
+    # Update user's balance
+        updateBalance(user, balance)  # Call the function to update the balance
+
+        context = {
+            'balance': balance,
+            'username': user.username
+        }
+        return render(request, self.template_name, context)
+
 
 class ViewTransactionHistoryView(LoginRequiredMixin, ListView):
     model = History
@@ -169,16 +198,20 @@ class ViewTransactionHistoryView(LoginRequiredMixin, ListView):
     ordering = ['-datetime']
 
     def get_queryset(self):
+        return History.objects.filter(user=self.request.user)
         '''
         This method should return the entire transaction history of the current user
         '''
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Add the 'username' key with the value of username to the context.
+        context['username'] = self.request.user.username
+        return context
         '''
         Add the 'username' key with the value of username to the context.
         '''
-        return context
+        
 
 class CurrencyExchangeView(LoginRequiredMixin, View):
     template_name = 'app/currency_exchange.html'

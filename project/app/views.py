@@ -1,4 +1,4 @@
-from pyexpat.errors import messages
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
@@ -17,7 +17,7 @@ def logout_view(request):
 
 def getBalance(user):
     total_deposits = History.objects.filter(user=user,type="deposit",status= "success").aggregate(total=Sum('amount'))['total'] 
-    total_debits = History.objects.filter(user=user,type="debit",status= "success").aggregate(total=Sum('amount'))['total']
+    total_debits = History.objects.filter(user=user,type="withdraw",status= "success").aggregate(total=Sum('amount'))['total']
 
     if total_deposits is None:
         total_deposits = 0
@@ -157,20 +157,20 @@ class BalanceOperationsView(LoginRequiredMixin, View):
 
     def post(self, request):
         type = request.POST.get('type')
-        amount = float(request.POST.get('amount', 0))  # Get the amount from the form
+        amount = float(request.POST.get('amount'))  # Get the amount from the form
         user = request.user
         balance = getBalance(user)  # Get the current balance
 
         if type == 'withdraw':
             if balance >= amount:
                 balance -= amount  # Deduct the amount
-                status = 'withdraw'
+                status = 'success'
             else:
                 messages.error(request, "Insufficient balance")
                 status = 'failure'
         elif type == 'deposit':
             balance += amount  # Add the amount
-            status = 'deposit'
+            status = 'success'
         else:
             messages.error(request, "Invalid operation type")
             return self.get(request)
@@ -179,12 +179,12 @@ class BalanceOperationsView(LoginRequiredMixin, View):
         History.objects.create(
             status=status,
             amount=amount,
-            operation_type=type,
+            type=type,
             user=user
         )
 
     # Update user's balance
-        getBalance(user, balance)  # Call the function to update the balance
+        getBalance(user)  # Call the function to update the balance
 
         context = {
             'balance': balance,

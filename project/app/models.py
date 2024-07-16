@@ -11,7 +11,7 @@ class History(models.Model):
     )
     TRANSACTION_CHOICES = (
         ('deposit', 'Deposit'),
-        ('debit', 'Debit'),
+        ('withdraw', 'Withdraw'),
     )
 
     status = models.CharField(max_length=10,choices=STATUS_CHOICES)

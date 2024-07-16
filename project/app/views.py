@@ -16,8 +16,14 @@ def logout_view(request):
     return redirect('login') 
 
 def getBalance(user):
-    total_deposits = History.objects.filter(user=user,type="Deposit",status= "Success").aggregate(total=Sum('amount'))['total'] 
-    total_debits = History.objects.filter(user=user,type="Debit",status= "Success").aggregate(total=Sum('amount'))['total'] 
+    total_deposits = History.objects.filter(user=user,type="deposit",status= "success").aggregate(total=Sum('amount'))['total'] 
+    total_debits = History.objects.filter(user=user,type="debit",status= "success").aggregate(total=Sum('amount'))['total']
+
+    if total_deposits is None:
+        total_deposits = 0
+    if total_debits is None:
+        total_debits = 0
+
     balance = total_deposits - total_debits
     return float(balance)    
 '''
@@ -72,12 +78,14 @@ class CreateUserView(CreateView):
         # Handle invalid form submission (typically render the form with errors)
         return self.render_to_response(self.get_context_data(form=form))
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
         '''
         If the user is authenticated, then add the 'username' key with the value of username to the context.
         '''
-        return context
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['username'] = self.request.user.username
+        return context    
     
 
 
@@ -89,11 +97,7 @@ class CreateUserView(CreateView):
     If the account is successfully created, it should redirect to the page with the name login
     '''
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.user.is_authenticated:
-            context['username'] = self.request.user.username
-        return context
+    
 
 class CustomLoginView(LoginView):
     template_name = 'app/login.html'
@@ -110,13 +114,14 @@ class CustomLoginView(LoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
-            return redirect(self.success_url)
-        context['username']= self.request.user.username
+            context['username']= self.request.user.username
+        return context
+        
             
         ''' 
         If the user is authenticated, then add the 'username' key with the value of username to the context.
         '''
-        return context
+        
 
 class MainMenuView(LoginRequiredMixin, TemplateView):
     template_name = 'app/main_menu.html'
@@ -134,9 +139,6 @@ class MainMenuView(LoginRequiredMixin, TemplateView):
 
 class BalanceOperationsView(LoginRequiredMixin, View):
     template_name = 'app/operations.html'
-    
-    def get(self, request):
-        template_name = 'app/operations.html'
 
     def get(self, request):
         balance = getBalance(request.user)
@@ -182,7 +184,7 @@ class BalanceOperationsView(LoginRequiredMixin, View):
         )
 
     # Update user's balance
-        updateBalance(user, balance)  # Call the function to update the balance
+        getBalance(user, balance)  # Call the function to update the balance
 
         context = {
             'balance': balance,
@@ -219,15 +221,50 @@ class CurrencyExchangeView(LoginRequiredMixin, View):
 
     def get(self, request):
         _, currency_choices = getCurrencyParams()
-        '''
-        Generate a context variable with all values from empty_context and the converted values of currency_choices and username
-        currency_choices contains the value of the currency_choices variable
-        username contains the name of the current user
-        '''
-        #return render(request, self.template_name, context)
+        context = {
+            **self.empty_context, 
+            'currency_choices': currency_choices,  
+        }
+        return render(request, self.template_name, context)
 
+    
     def post(self, request):
         data, currency_choices = getCurrencyParams()
+    
+    # Process the 'amount' from the form
+        amount = request.POST.get('amount')
+        try:
+            amount = float(amount) if amount else None
+        except ValueError:
+            amount = None  # Set to None if conversion fails
+
+    #  Get the currency value from the form
+        currency = request.POST.get('currency')
+
+    # Check if 'data' or 'amount' is None
+        if data is None or amount is None:
+            context = self.empty_context
+            return render(request, self.template_name, context)
+
+    # Generate the exchange_rate
+        exchange_rate = data.get(currency)  # Assuming 'data' is a dictionary with currency rates
+
+    # Step 5: Calculate exchanged_amount
+        if exchange_rate is not None:
+            exchanged_amount = round(amount * exchange_rate, 2)
+        else:
+            exchanged_amount = None  # Handle case where exchange rate is not found
+
+    # Step 6: Form the context and return the template
+        context = {
+            'currency_choices': currency_choices,
+            'amount': amount,
+            'currency': currency,
+            'exchanged_amount': exchanged_amount,
+            'username': request.user.username
+    }
+    
+        return render(request, self.template_name, context)
         '''
             Improve this method:
             1) add the process of forming the variable amount.

@@ -19,9 +19,9 @@ class BalanceCalculationTestCase(TestCase):
 
     def test_get_balance_with_transactions(self):
         History.objects.create(user=self.user, amount=100, type='deposit', status='success')
-        History.objects.create(user=self.user, amount=50, type='withdraw', status='success')
+        History.objects.create(user=self.user, amount=50, type='debit', status='success')
         History.objects.create(user=self.user, amount=25, type='deposit', status='success')
-        expected_balance = 100 + 25 - 50
+        expected_balance = 100 - 50 + 25
         balance = getBalance(self.user)
         
         self.assertEqual(balance, expected_balance)

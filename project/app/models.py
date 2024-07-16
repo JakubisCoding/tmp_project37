@@ -7,7 +7,7 @@ class History(models.Model):
         ('failure', 'Failure'),
     )
     TRANSACTION_CHOICES = (
-        ('deposit', 'Deposit'),
+        ('withdraw', 'Withdraw'),
         ('debit', 'Debit'),
     )
 

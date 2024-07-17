@@ -71,6 +71,7 @@ class CreateUserViewTestCase(TestCase):
     def test_create_user_view_post(self, mock_create_user):
         mock_create_user.return_value = User.objects.create_user(username='testuser', password='testpassword')
         data = {
+            'email': 'testuser@example.com',
             'username': 'testuser',
             'password1': 'testpassword',
             'password2': 'testpassword',

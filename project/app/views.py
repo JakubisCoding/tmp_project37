@@ -247,7 +247,7 @@ class CurrencyExchangeView(LoginRequiredMixin, View):
             return render(request, self.template_name, context)
 
     # Generate the exchange_rate
-        exchange_rate = data.get(currency)  # Assuming 'data' is a dictionary with currency rates
+        exchange_rate = data.get(currency) 
 
     # Step 5: Calculate exchanged_amount
         if exchange_rate is not None:

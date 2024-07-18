@@ -198,6 +198,7 @@ class ViewTransactionHistoryView(LoginRequiredMixin, ListView):
     template_name = 'app/history.html'
     context_object_name = 'transactions'
     ordering = ['-datetime']
+    
 
     def get_queryset(self):
         return History.objects.filter(user=self.request.user)

@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-from django.db import models
-from django.contrib.auth.models import User
+
+
 
 class History(models.Model):
     STATUS_CHOICES = (
@@ -11,7 +11,7 @@ class History(models.Model):
     )
     TRANSACTION_CHOICES = (
         ('deposit', 'Deposit'),
-        ('withdraw', 'Withdraw'),
+        ('debit', 'Debit'),
     )
 
     status = models.CharField(max_length=10,choices=STATUS_CHOICES)
@@ -22,3 +22,5 @@ class History(models.Model):
 
     def __str__(self):
         return f'{self.user} - {self.type} - {self.amount} - {self.status}'
+
+    
